@@ -2,6 +2,7 @@ from datetime import datetime, time, date, timedelta
 import requests
 import logging
 import locale
+import pickle
 import json
 import sys
 
@@ -14,6 +15,7 @@ locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 ## Definición de los días
 hoy = date.today()
 manana = hoy + timedelta(1)
+ayer = hoy - timedelta(1)
 dia = datetime.now()
 
 # Variables para el Token y la URL del chatbot de Telegram
@@ -47,6 +49,15 @@ json_data = json.loads(response.text)
 datos = json_data['included'][0]['attributes']['values']
 logging.info(str(datetime.now()) + " - Última actualización: " + json_data['included'][0]['attributes']['last-update'])
 ultimaHora = datetime.fromisoformat(json_data['included'][0]['attributes']['last-update'])
+
+## Mira si existe fecha de última actualización y la crea si no existe
+try:
+    open("ultimoUpdate.pickle", "rb")
+except (OSError, IOError) as e:
+    pickle.dump(datetime.fromisoformat(json_data['included'][0]['attributes']['last-update']), open("ultimoUpdate.pickle", "wb"))
+
+## Carga la fecha de última actualización
+ultimoUpdate = pickle.load(open("ultimoUpdate.pickle", "rb"))
 
 ## Proceso que prepara y envía los datos
 def procesarDatos():
@@ -100,7 +111,7 @@ def procesarDatos():
     logging.info(str(datetime.now()) + " -\n" + mensaje)
 
     ## Manda el mensaje completo al bot de Telegram
-    #response =requests.get(url_telegram + "sendMessage?text=" + "Precio luz " + dia.__format__('%A %d/%m/%y') + "\n\n" + str(precio_minimo) + "\n" +  str(precio_maximo) + "\n" +  str(precio_medio) + "\n\n" + lista + "&chat_id=" + str(idchat))
+    response =requests.get(url_telegram + "sendMessage?text=" + "Precio luz " + dia.__format__('%A %d/%m/%y') + "\n\n" + str(precio_minimo) + "\n" +  str(precio_maximo) + "\n" +  str(precio_medio) + "\n\n" + lista + "&chat_id=" + str(idchat))
 
     ## Comprueba si la ejecución ha sido correcta
     if response.status_code == 200:
@@ -109,8 +120,10 @@ def procesarDatos():
         logging.warning(str(datetime.now()) + " - Status: " + str(response.status_code) + " - Puede que el proceso no haya finalizado correctamente")
         sys.exit(1)
 
-if ultimaHora.time() > time(20, 5, 0):
+## Si ha habido actualización, ejecutamos el procesado de datos y guardamos la nueva fecha
+if ultimaHora > ultimoUpdate:
     procesarDatos()
+    pickle.dump(datetime.fromisoformat(json_data['included'][0]['attributes']['last-update']), open("ultimoUpdate.pickle", "wb"))
 else:
     logging.info(str(datetime.now()) + " - Los datos no han sido actualizados")
     sys.exit(0)
