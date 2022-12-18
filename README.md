@@ -1,4 +1,4 @@
 # pvpc_diario
-Script para enviar mediante un bot de Telegram el precio diario de la luz por horas
+Script para enviar mediante un bot de Telegram el precio diario de la luz por horas.
 
-Hay que sustituir el TOKEN del bot de Telegram y el idchat para que funcione.
+Hay que crear las variables de entorno TOKEN e IDCHAT con los valores del bot de Telegram que se vaya a usar.
