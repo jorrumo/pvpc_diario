@@ -84,15 +84,17 @@ def procesarDatos():
 
     ## Ordena los precios diarios para calcular el mínimo y el máximo
     precios_ordenados = [(hora, precio) for hora, precio in {hora: precio for hora, precio in sorted(precios_dia.items(), key=lambda item: item[1])}.items()]
+    minimo = precios_ordenados[0][1]
+    maximo = precios_ordenados[-1][1]
 
     ## Lista con los precios del día
     precios = [(hora, precio) for hora, precio in precios_dia.items()]
 
     ## Crea las tuplas con la hora, el precio y el emoji a mostrar
     for i in precios:
-        if i[1] < medio-0.011:
+        if i[1] <= minimo*1.2:
             emojis.append(("\U0001F7E2", i[0], i[1]))
-        elif i[1] > medio+0.011:
+        elif i[1] >= maximo*0.9:
             emojis.append(("\U0001F534", i[0], i[1]))
         else:
             emojis.append(("\U0001F7E1", i[0], i[1]))
