@@ -45,62 +45,72 @@ json_data = json.loads(response.text)
 
 ## Coge únicamente los datos del PVPC por horas
 datos = json_data['included'][0]['attributes']['values']
+logging.info(str(datetime.now()) + " - Última actualización: " + json_data['included'][0]['attributes']['last-update'])
+ultimaHora = datetime.fromisoformat(json_data['included'][0]['attributes']['last-update'])
 
-## Variables que usa el proceso
-fecha = ""
-hora = ""
-precio = 0.0
-precios_dia = {}
-medio = 0.0
-lista = ""
-emojis = []
+## Proceso que prepara y envía los datos
+def procesarDatos():
+    ## Variables que usa el proceso
+    fecha = ""
+    hora = ""
+    precio = 0.0
+    precios_dia = {}
+    medio = 0.0
+    lista = ""
+    emojis = []
 
-## Extrae la información del JSON
-for i in datos:
-    fecha = i['datetime'].split("T")
-    hora = str(int(fecha[1][0:2])) + "h - " + str(int(fecha[1][0:2]) + 1) + "h"
-    precio = i['value']/1000
-    precios_dia[hora] = precio.__round__(5)
+    ## Extrae la información del JSON
+    for i in datos:
+        fecha = i['datetime'].split("T")[1][0:2]
+        hora = str(int(fecha)) + "h - " + str(int(fecha) + 1) + "h"
+        precio = i['value']/1000
+        precios_dia[hora] = precio.__round__(5)
 
-## Calcula el precio medio
-for i in precios_dia:
-    medio += precios_dia[i]
-medio = medio/24
+    ## Calcula el precio medio
+    for i in precios_dia:
+        medio += precios_dia[i]
+    medio = medio/24
 
-## Ordena los precios diarios para calcular el mínimo y el máximo
-precios_ordenados = [(hora, precio) for hora, precio in {hora: precio for hora, precio in sorted(precios_dia.items(), key=lambda item: item[1])}.items()]
+    ## Ordena los precios diarios para calcular el mínimo y el máximo
+    precios_ordenados = [(hora, precio) for hora, precio in {hora: precio for hora, precio in sorted(precios_dia.items(), key=lambda item: item[1])}.items()]
 
-## Lista con los precios del día
-precios = [(hora, precio) for hora, precio in precios_dia.items()]
+    ## Lista con los precios del día
+    precios = [(hora, precio) for hora, precio in precios_dia.items()]
 
-## Crea las tuplas con la hora, el precio y el emoji a mostrar
-for i in precios:
-    if i[1] < medio-0.011:
-        emojis.append(("\U0001F7E2", i[0], i[1]))
-    elif i[1] > medio+0.011:
-        emojis.append(("\U0001F534", i[0], i[1]))
+    ## Crea las tuplas con la hora, el precio y el emoji a mostrar
+    for i in precios:
+        if i[1] < medio-0.011:
+            emojis.append(("\U0001F7E2", i[0], i[1]))
+        elif i[1] > medio+0.011:
+            emojis.append(("\U0001F534", i[0], i[1]))
+        else:
+            emojis.append(("\U0001F7E1", i[0], i[1]))
+
+    ## Crea la lista con los precios por hora para mostrar en Telegram
+    for i in emojis:
+        lista += i[0] + i[1] + " " + str(i[2]) + " €/kWh" + "\n"
+
+    ## Crea las strings con los precios mínimo, máximo y medio
+    precio_minimo = "Mínimo: " + str(precios_ordenados[0][0]) + " - " + str(precios_ordenados[0][1]) + " €/kWh"
+    precio_maximo = "Máximo: " + str(precios_ordenados[-1][0]) + " - " + str(precios_ordenados[-1][1]) + " €/kWh"
+    precio_medio = "Medio: " + str((medio).__round__(5)) + " €/kWh"
+
+    ## String con el mensaje completo
+    mensaje = "Precio luz " + dia.__format__('%A %d/%m/%y') + "\n\n" + str(precio_minimo) + "\n" +  str(precio_maximo) + "\n" +  str(precio_medio) + "\n\n" + lista
+    logging.info(str(datetime.now()) + " -\n" + mensaje)
+
+    ## Manda el mensaje completo al bot de Telegram
+    #response =requests.get(url_telegram + "sendMessage?text=" + "Precio luz " + dia.__format__('%A %d/%m/%y') + "\n\n" + str(precio_minimo) + "\n" +  str(precio_maximo) + "\n" +  str(precio_medio) + "\n\n" + lista + "&chat_id=" + str(idchat))
+
+    ## Comprueba si la ejecución ha sido correcta
+    if response.status_code == 200:
+        logging.info(str(datetime.now()) + " - Finaliza el proceso correctamente")
     else:
-        emojis.append(("\U0001F7E1", i[0], i[1]))
+        logging.warning(str(datetime.now()) + " - Status: " + str(response.status_code) + " - Puede que el proceso no haya finalizado correctamente")
+        sys.exit(1)
 
-## Crea la lista con los precios por hora para mostrar en Telegram
-for i in emojis:
-    lista += i[0] + i[1] + " " + str(i[2]) + "€/kWh" + "\n"
-
-## Crea las strings con los precios mínimo, máximo y medio
-precio_minimo = "Mínimo: " + str(precios_ordenados[0][0]) + " - " + str(precios_ordenados[0][1]) + "€/kWh"
-precio_maximo = "Máximo: " + str(precios_ordenados[-1][0]) + " - " + str(precios_ordenados[-1][1]) + "€/kWh"
-precio_medio = "Medio: " + str((medio).__round__(5)) + "€/kWh"
-
-## String con el mensaje completo
-mensaje = "Precio luz " + dia.__format__('%A %d/%m/%y') + "\n\n" + str(precio_minimo) + "\n" +  str(precio_maximo) + "\n" +  str(precio_medio) + "\n\n" + lista
-logging.info(str(datetime.now()) + " -\n" + mensaje)
-
-## Manda el mensaje completo al bot de Telegram
-response =requests.get(url_telegram + "sendMessage?text=" + "Precio luz " + dia.__format__('%A %d/%m/%y') + "\n\n" + str(precio_minimo) + "\n" +  str(precio_maximo) + "\n" +  str(precio_medio) + "\n\n" + lista + "&chat_id=" + str(idchat))
-
-## Comprueba si la ejecución ha sido correcta
-if response.status_code == 200:
-    logging.info(str(datetime.now()) + " - Finaliza el proceso correctamente")
+if ultimaHora.time() > time(20, 5, 0):
+    procesarDatos()
 else:
-    logging.warning(str(datetime.now()) + " - Status: " + str(response.status_code) + " - Puede que el proceso no haya finalizado correctamente")
-    sys.exit(1)
+    logging.info(str(datetime.now()) + " - Los datos no han sido actualizados")
+    sys.exit(0)
