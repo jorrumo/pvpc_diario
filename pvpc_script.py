@@ -49,7 +49,6 @@ json_data = json.loads(response.text)
 datos = json_data['included'][0]['attributes']['values']
 logging.info(str(datetime.now()) + " - Última actualización: " + json_data['included'][0]['attributes']['last-update'])
 ultimaHora = datetime.fromisoformat(json_data['included'][0]['attributes']['last-update'])
-
 ## Mira si existe fecha de última actualización y la crea si no existe
 try:
     open("ultimoUpdate.pickle", "rb")
@@ -92,7 +91,7 @@ def procesarDatos():
 
     ## Crea las tuplas con la hora, el precio y el emoji a mostrar
     for i in precios:
-        if i[1] <= minimo*1.2:
+        if i[1] <= minimo*1.175:
             emojis.append(("\U0001F7E2", i[0], i[1]))
         elif i[1] >= maximo*0.9:
             emojis.append(("\U0001F534", i[0], i[1]))
