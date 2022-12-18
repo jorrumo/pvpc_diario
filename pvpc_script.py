@@ -3,6 +3,7 @@ import requests
 import logging
 import locale
 import pickle
+import config
 import json
 import sys
 
@@ -19,9 +20,9 @@ ayer = hoy - timedelta(1)
 dia = datetime.now()
 
 # Variables para el Token y la URL del chatbot de Telegram
-TOKEN = "**********:*******************************"
+TOKEN = config.TOKEN
 url_telegram = "https://api.telegram.org/bot" + TOKEN + "/"
-idchat = "-*************"
+idchat = config.idchat
 
 ## Comprueba si han salido los datos del día siguiente, si no, muestra el día actual
 nuevos_datos = time(20, 5, 0)
