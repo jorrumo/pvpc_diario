@@ -3,9 +3,9 @@ import requests
 import logging
 import locale
 import pickle
-import config
 import json
 import sys
+import os
 
 logging.basicConfig(filename='logs_pvpc.log', encoding='utf-8', level=logging.INFO)
 logging.info(str(datetime.now()) + " - Comienza el proceso")
@@ -16,13 +16,12 @@ locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")
 ## Definición de los días
 hoy = date.today()
 manana = hoy + timedelta(1)
-ayer = hoy - timedelta(1)
 dia = datetime.now()
 
 # Variables para el Token y la URL del chatbot de Telegram
-TOKEN = config.TOKEN
+TOKEN = os.environ.get('TOKEN')
 url_telegram = "https://api.telegram.org/bot" + TOKEN + "/"
-idchat = config.idchat
+idchat = os.environ.get('IDCHAT')
 
 ## Comprueba si han salido los datos del día siguiente, si no, muestra el día actual
 nuevos_datos = time(20, 5, 0)
@@ -105,8 +104,8 @@ def procesarDatos():
         lista += i[0] + i[1] + " " + str(i[2]) + " €/kWh" + "\n"
 
     ## Crea las strings con los precios mínimo, máximo y medio
-    precio_minimo = "Mínimo: " + str(precios_ordenados[0][0]) + " - " + str(precios_ordenados[0][1]) + " €/kWh"
-    precio_maximo = "Máximo: " + str(precios_ordenados[-1][0]) + " - " + str(precios_ordenados[-1][1]) + " €/kWh"
+    precio_minimo = "Mínimo: " + str(minimo) + " - " + str(minimo) + " €/kWh"
+    precio_maximo = "Máximo: " + str(maximo) + " - " + str(maximo) + " €/kWh"
     precio_medio = "Medio: " + str((medio).__round__(5)) + " €/kWh"
 
     ## String con el mensaje completo
